@@ -54,18 +54,22 @@ function buildPopup(spot) {
 }
 
 // create spots and add markers
-fetch("data/spots.json")
-  .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+fetch('http://localhost:3000/api/spots')
+  .then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  })
   .then(spots => {
-    console.log("Loaded spots:", spots); // should list your spots
+    console.log('Loaded spots:', spots.length, spots[0]);
     spots.forEach(spot => {
       L.marker([spot.lat, spot.lng], { icon: studyIcon })
         .bindPopup(buildPopup(spot))
         .addTo(cluster);
     });
-    console.log("Cluster size:", cluster.getLayers().length); // should be >= spots.length + 3 (smoke test)
   })
-  .catch(err => console.error("Failed to load spots:", err));
+  .catch(err => {
+    console.error('API /api/spots failed:', err);
+  });
 
 // Filters dropdown behavior 
 (function () {

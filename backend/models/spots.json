@@ -1,0 +1,59 @@
+[
+  {
+    "id": "leavey-library",
+    "name": "Leavey Library (LL)",
+    "building": "Leavey Library",
+    "lat": 34.0213,
+    "lng": -118.2826,
+    "tags": ["quiet", "indoor", "outlets"],
+    "notes": "Upper floors are quiet study. Lots of outlets; reservable rooms.",
+    "hours": {
+      "mon": [{"open": "08:00", "close": "22:00"}],
+      "tue": [{"open": "08:00", "close": "22:00"}],
+      "wed": [{"open": "08:00", "close": "22:00"}],
+      "thu": [{"open": "08:00", "close": "22:00"}],
+      "fri": [{"open": "08:00", "close": "20:00"}],
+      "sat": [{"open": "10:00", "close": "18:00"}],
+      "sun": [{"open": "10:00", "close": "22:00"}]
+    },
+    "likes": 4
+  },
+  {
+    "id": "doheny-library",
+    "name": "Doheny Memorial Library (DML)",
+    "building": "Doheny Library",
+    "lat": 34.0205,
+    "lng": -118.2839,
+    "tags": ["quiet", "indoor"],
+    "notes": "Historic reading rooms; good for heads-down work.",
+    "hours": {
+      "mon": [{"open": "09:00", "close": "18:00"}],
+      "tue": [{"open": "09:00", "close": "18:00"}],
+      "wed": [{"open": "09:00", "close": "18:00"}],
+      "thu": [{"open": "09:00", "close": "18:00"}],
+      "fri": [{"open": "09:00", "close": "17:00"}],
+      "sat": [],
+      "sun": []
+    },
+    "likes": 3
+  },
+  {
+    "id": "tcc",
+    "name": "Tutor Campus Center (TCC) Tables",
+    "building": "Ronald Tutor Campus Center",
+    "lat": 34.0209,
+    "lng": -118.2852,
+    "tags": ["group", "outdoor", "outlets"],
+    "notes": "Shaded outdoor tables; a bit lively at lunch.",
+    "hours": {
+      "mon": [{"open": "07:00", "close": "22:00"}],
+      "tue": [{"open": "07:00", "close": "22:00"}],
+      "wed": [{"open": "07:00", "close": "22:00"}],
+      "thu": [{"open": "07:00", "close": "22:00"}],
+      "fri": [{"open": "07:00", "close": "22:00"}],
+      "sat": [{"open": "08:00", "close": "22:00"}],
+      "sun": [{"open": "08:00", "close": "22:00"}]
+    },
+    "likes": 6
+  }
+]
