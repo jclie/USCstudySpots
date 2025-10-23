@@ -1,0 +1,36 @@
+[
+  {
+    "id": "leavey-3f",
+    "name": "LL – 3rd Floor Quiet Zone",
+    "lat": 34.022076080860906,
+    "lng": -118.28289297545966,
+    "notes": "Quiet space with outlets. Good after 8pm.",
+    "tags": ["quiet", "outlets", "indoor"],
+    "hours": {
+      "mon": [{ "open": "07:00", "close": "23:00" }],
+      "tue": [{ "open": "07:00", "close": "23:00" }],
+      "wed": [{ "open": "07:00", "close": "23:00" }],
+      "thu": [{ "open": "07:00", "close": "23:00" }],
+      "fri": [{ "open": "07:00", "close": "22:00" }],
+      "sat": [{ "open": "09:00", "close": "18:00" }],
+      "sun": []
+    }
+  },
+  {
+    "id": "doheny-reading",
+    "name": "Doheny Library Reading Room",
+    "lat": 34.02094,
+    "lng": -118.28346,
+    "notes": "Silent zone. Historic room. Best for deep reading.",
+    "tags": ["quiet", "indoor"],
+    "hours": {
+      "mon": [{ "open": "08:00", "close": "20:00" }],
+      "tue": [{ "open": "08:00", "close": "20:00" }],
+      "wed": [{ "open": "08:00", "close": "20:00" }],
+      "thu": [{ "open": "08:00", "close": "20:00" }],
+      "fri": [{ "open": "08:00", "close": "18:00" }],
+      "sat": [],
+      "sun": []
+    }
+  }
+]
