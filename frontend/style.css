@@ -1,0 +1,253 @@
+body { 
+    height: 100%;
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; 
+}
+#app { 
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+}
+#map { 
+    position: absolute;
+    inset: 0;
+}
+/* Toolbar row */
+#toolbar {
+  position: absolute; top: 12px; left: 12px; right: 12px;
+  display: flex; flex-wrap: wrap; gap: .6rem; align-items: center;
+  background: transparent; border: 0; z-index: 1000;
+}
+/* ------- Google-style search pill ------- */
+.gm-searchwrap{
+  position:absolute;
+  top:12px; left:50%; right:auto;
+  transform: translateX(-50%);   /* center */
+  z-index:1000;
+  display: flex;
+  align-items: center; 
+}
+.gm-searchbox {
+  display: relative; 
+  align-items: center; 
+  gap: .05 rem;
+  min-width: clamp(260px, 40vw, 520px);
+  padding: .55rem .7rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.10),
+    0 2px 8px rgba(0,0,0,.12);
+  flex-wrap: nowrap; /* prevent wrapping */
+  display: flex;            
+  align-items: center;   
+  gap: .75rem;
+}
+.gm-searchbox{ 
+  position: relative;
+  
+}
+.gm-searchbox .search {
+  flex: 1; /* makes input take up remaining space */
+  min-width: 0; /* prevents it from forcing others down */
+}
+.gm-icon {
+  display: grid; place-items: center;
+  width: 32px; height: 32px;
+  border: 0; background: transparent; color: #5f6368; cursor: pointer;
+  border-radius: 999px;
+}
+.gm-icon:hover { 
+  background: rgba(0,0,0,.06); 
+}
+/* Dropdown panel */
+.filter-panel {
+  position: absolute;
+  top: calc(100% + 8px);     /* below the search pill */
+  right: 0;                  /* align to the right edge of the search pill */
+  min-width: 100px;
+  max-width: 100px;
+  background: #fff;
+  border: 0px solid black;
+  box-shadow:
+    0 1px 2px rgb(0,0,0,.9),
+    0 6px 24px rgb(0,0,0,.18);
+  border-radius: 12px;
+  padding: .6rem .7rem;
+  display: none;             /* hidden by default */
+}
+/* show panel */
+.filter-panel.open { 
+    display: block;
+}
+
+/* make chips wrap nicely inside panel */
+.filter-panel .chipbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+.filter-panel .chip {
+  font-size: 0.8rem;
+  color: black;
+}
+/* keep the filters button feeling clickable */
+#filtersBtn { 
+    position: relative; 
+}
+
+/* small caret triangle (optional) */
+.filter-panel::before {
+  content: "";
+  position: absolute;
+  top: -8px; right: 20px;
+  border-width: 8px;
+  border-style: solid;
+  border-color: transparent transparent #fff transparent;
+  filter: drop-shadow(0 -1px 0 rgba(0,0,0,.08));
+}
+
+/* Responsive: stack the panel full-width on small screens */
+@media (max-width: 520px) {
+  .filter-panel {
+    left: 0; right: 0; min-width: auto;
+  }
+}
+#toolbar .search {
+  flex: 1; min-width: 120px;
+  border: 0; outline: none;
+  background: transparent; color: #202124;
+  font-size: 0.95rem;
+  -webkit-appearance: none; appearance: none;
+}
+.chip { 
+    display:inline-flex;
+    align-items:center;
+    gap:.35rem; 
+    border:1px solid #ddd; 
+    padding:.25rem .5rem; 
+    border-radius:18px; 
+    cursor:pointer; 
+    user-select:none; 
+}
+.chip input { 
+    accent-color: #cc0000;
+}
+.search { 
+    flex: 1; min-width: 220px; 
+}
+.popup h3 { 
+    margin:.2rem 0 .3rem; 
+    font-size: 1rem; 
+}
+
+/* Cluster */
+.cluster {
+  display: grid;
+  place-items: center;
+  width: 40px; height: 40px;
+  color: white; font-weight: 700;
+  background: #990000;     /* base (small) */
+  border-radius: 50%;      /* square-ish; use 50% for circle */
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  --halo: rgba(153,0,0,.45); /* glow color */
+
+  filter:
+    drop-shadow(0 4px 12px rgba(0,0,0,.25))   /* soft shadow */
+    drop-shadow(0 0 18px var(--halo));        /* colored glow */
+}           
+.cluster:hover { 
+  transform: scale(1.06); 
+}
+
+/* Add Study Spot Button */
+.gm-addBtn{
+  white-space: nowrap;
+  height: 40px;            /* matches .gm-icon size and pill height */
+  padding: 0 14px;         /* horizontal padding only */
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.08);
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.10),
+    0 2px 8px rgba(0,0,0,.12);
+  border-radius: 999px;    /* pill shape */
+  font-weight: 600;
+  cursor: pointer;
+}
+.gm-addBtn:hover {
+  background-color: #b31b1b;
+  color: white;
+  transform: translateY(-1px);
+}
+.gm-addBtn:active {
+  transform: translateY(0);
+}
+.gm-addBtn:focus {
+  outline: 2px solid #ffc72c; /* USC gold */
+  outline-offset: 2px;
+}
+@media (max-width: 520px){
+  .gm-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .gm-addBtn {
+    width: 100%;
+  }
+}
+
+/* --- Sidebar list --- */
+.side-list{
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: min(360px, 85vw); background: #fff; z-index: 999;
+  border-left: 1px solid rgba(0,0,0,.08);
+  box-shadow: -4px 0 16px rgba(0,0,0,.12);
+  display: none; flex-direction: column;
+}
+.side-list.open { 
+  display: flex; 
+}
+.side-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .7rem .9rem; border-bottom: 1px solid rgba(0,0,0,.08);
+}
+.iconbtn { 
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1; 
+}
+.list-results { 
+  list-style: none;
+  margin: 0; 
+  padding: .25rem; 
+  overflow: auto; 
+}
+.list-item { 
+  padding: .6rem; 
+  border-radius: 10px; 
+  cursor: pointer; 
+}
+.list-item:hover {
+  background: #f6f6f6; 
+}
+.item-title { 
+  font-weight: 700;
+  margin: 0 0 .15rem; 
+  font-size: .98rem; 
+}
+.item-sub { 
+  color: #555;
+  font-size: .85rem;
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap; 
+}
+.item-dist { 
+  font-variant-numeric: tabular-nums; 
+}
+@media (max-width: 720px){
+  .side-list { width: 100%; }
+}

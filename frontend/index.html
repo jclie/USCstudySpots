@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>USC Study Spots</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+  
+  <!-- Load Leaflet FIRST -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+
+  <!-- Marker Cluster -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js" defer></script>
+
+  <!-- fuse -->
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
+  <!-- link to js -->
+  <script src="script.js" defer></script>
+  
+</head>
+<body>
+  <div id="app">
+    <div id="map" aria-label="Campus map" role="region"></div>
+    
+    <aside id="sideList" class="side-list" aria-label="Nearby study spots" hidden></aside>
+    <header class="side-header">
+      <strong>Nearby spots</strong>
+      <button id="closeList" class="iconbtn" aria-label="Close list">&times;</button>
+    </header>
+    <ul id="listResults" class="list-results" role="list"></ul>
+    </aside>
+
+    <!-- search engine -->
+    <div class="gm-searchwrap">
+      <div class="gm-searchbox" role="search">
+        <button class="gm-icon left" aria-label="Search">
+          <!-- magnifier -->
+           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.71.71l.27.28v.79L20 21.5 21.5 20l-6-6zM10 15a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" fill="currentColor"/>
+          </svg>
+        </button>
+        
+        <input id="search" class="search" type="search"
+        placeholder="Search by name or building…" aria-label="Search spots"
+        autocomplete="off" />
+        
+        <button class="gm-icon right" aria-label="Submit search">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M12 2l4 8-8 4 8 4-4 8V2z" fill="currentColor"/>
+          </svg>
+        </button>
+
+        <!-- Filters toggle button -->
+         <button id="filtersBtn" class="gm-icon" 
+         aria-haspopup="true" aria-expanded="false" aria-controls="filtersPanel" aria-label="Open filters">
+         <!-- funnel icon -->
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M3 4h18l-7 9v5l-4 2v-7L3 4z" fill="currentColor"/>
+          </svg>
+        </button>
+
+        <button id="listToggle" class="gm-icon" aria-label="Toggle list view" aria-pressed="false" title="List view">
+          <!-- list icon -->
+           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+            <path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z" fill="currentColor"/>
+          </svg>
+        </button>
+
+      </div>
+      <ul id="suggs" class="suggestions" role="listbox" aria-label="Search suggestions"></ul>
+
+      
+      <div id="filtersPanel" class="filter-panel" role="dialog" aria-label="Filter tags" aria-modal="false">
+        <div class="chipbar" id="filters">
+          <label class="chip"><input type="checkbox" class="flt" value="quiet"> quiet</label>
+          <label class="chip"><input type="checkbox" class="flt" value="group"> group</label>
+          <label class="chip"><input type="checkbox" class="flt" value="outdoor"> outdoor</label>
+          <label class="chip"><input type="checkbox" class="flt" value="indoor"> indoor</label>
+          <label class="chip"><input type="checkbox" class="flt" value="outlets"> outlets</label>
+        </div>
+      </div>
+      <button type="button" id="addSS" class="gm-addBtn" aria-label="Add a new study spot">
+          + Add Spot
+        </button>
+    </div>
+  </div>
+</body>
+</html>
