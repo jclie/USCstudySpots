@@ -61,6 +61,14 @@ body {
 .gm-icon:hover { 
   background: rgba(0,0,0,.06); 
 }
+.gm-searchbox {
+  transition: box-shadow 0.25s ease, transform 0.1s ease;
+}
+.gm-searchbox:focus-within {
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  transform: translateY(-1px);
+}
+
 /* Dropdown panel */
 .filter-panel {
   position: absolute;
@@ -250,4 +258,37 @@ body {
 }
 @media (max-width: 720px){
   .side-list { width: 100%; }
+}
+
+/* soften OSM colors but keep labels fully readable */
+.leaflet-tile-pane, .leaflet-tile {
+  filter: saturate(.8) brightness(1.06) contrast(1.05);
+}
+@media (prefers-color-scheme: dark) {
+  .leaflet-tile-pane, .leaflet-tile {
+    filter: saturate(1) brightness(.95) contrast(1.1);
+  }
+}
+
+/* POPUPs */
+.gm-popup {
+  font-family: Roboto, sans-serif;
+  line-height: 1.4;
+  max-width: 220px;
+}
+.gm-popup h3 {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+.gm-tags .tag {
+  display: inline-block;
+  background: #f1f3f4;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: .75rem;
+  margin-right: 4px;
+}
+.gm-hours {
+  font-size: .85rem;
+  color: #555;
 }

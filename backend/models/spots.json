@@ -5,7 +5,7 @@
     "building": "Leavey Library",
     "lat": 34.0213,
     "lng": -118.2826,
-    "tags": ["quiet", "indoor", "outlets"],
+    "tags": ["quiet", "indoo ", "outlets"],
     "notes": "Upper floors are quiet study. Lots of outlets; reservable rooms.",
     "hours": {
       "mon": [{"open": "08:00", "close": "22:00"}],

@@ -44,12 +44,12 @@ function buildPopup(spot) {
     hoursText = ranges.length ? ranges.map(r => `${r.open}–${r.close}`).join(", ") : "Closed today";
   }
   return `
-    <div class="popup">
-      <h3>${spot.name}</h3>
-      ${tags ? `<div class="popup-tags">${tags}</div>` : ""}
-      ${spot.notes ? `<p>${spot.notes}</p>` : ""}
-      ${spot.hours ? `<div class="popup-hours"><strong>Hours:</strong> <span>${hoursText}</span></div>` : ""}
-    </div>
+  <div class="gm-popup">
+    <h3>${spot.name}</h3>
+    ${tags ? `<div class="gm-tags">${tags}</div>` : ""}
+    <p>${spot.notes}</p>
+    ${spot.hours ? `<p class="gm-hours">🕒 ${hoursText}</p>` : ""}
+  </div>
   `;
 }
 
