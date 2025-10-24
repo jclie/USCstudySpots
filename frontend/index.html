@@ -28,18 +28,18 @@
   <div id="app">
     <div id="map" aria-label="Campus map" role="region"></div>
     
-    <aside id="sideList" class="side-list" aria-label="Nearby study spots" hidden></aside>
-    <header class="side-header">
-      <strong>Nearby spots</strong>
-      <button id="closeList" class="iconbtn" aria-label="Close list">&times;</button>
-    </header>
-    <ul id="listResults" class="list-results" role="list"></ul>
+    <!-- Sidebar list -->
+     <aside id="sideList" class="side-list" aria-label="Nearby study spots">
+      <header class="side-header">
+        <strong>Nearby spots</strong>
+        <button id="closeList" class="iconbtn" aria-label="Close list">&times;</button>
+      </header>
+      <ul id="listResults" class="list-results" role="list"></ul>
     </aside>
 
     <!-- search engine -->
     <div class="gm-searchwrap">
       <div class="gm-searchbox" role="search">
-        
         <button class="gm-icon left" aria-label="Search">
           <!-- magnifier -->
            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">

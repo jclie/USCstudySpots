@@ -4,8 +4,10 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "dev": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "render-build": "node seed.js"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.5",

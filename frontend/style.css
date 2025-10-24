@@ -22,11 +22,13 @@ body {
 .gm-searchwrap{
   position:absolute;
   top:12px; left:50%; right:auto;
-  transform: translateX(-50%);   /* center */
+  /* was: transform: translateX(-50%); */
+  transform: translateX(calc(-50% - var(--sidebar-offset, 0px) / 2));
   z-index:1000;
   display: flex;
   align-items: center; 
 }
+
 .gm-searchbox {
   display: relative; 
   align-items: center; 

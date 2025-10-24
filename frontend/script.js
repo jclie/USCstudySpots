@@ -4,7 +4,6 @@
 // sets map to USC location and zoomed to campus level
 const map = L.map('map').setView([34.0219, -118.2858], 16); // USC
 
-
 // tiles, creates the map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -262,3 +261,123 @@ toggleList = function(force){
 
 // also run once on load
 updateSidebarOffset();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Nearby list (sidebar)
+// ─────────────────────────────────────────────────────────────────────────────
+let allSpots = [];             // holds spots from /api/spots
+let userOrigin = null;         // {lat, lng} if geolocation allowed
+
+// quick helpers
+const listEl = document.getElementById('listResults');
+
+/** Haversine distance in meters */
+function haversine(a, b){
+  const R = 6371000;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const la1 = toRad(a.lat), la2 = toRad(b.lat);
+  const s = Math.sin(dLat/2)**2 + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function fmtDistance(m){
+  if (m < 1000) return `${Math.round(m)} m`;
+  return `${(m/1000).toFixed(2)} km`;
+}
+
+/**
+ * refreshList()
+ * Builds the nearby list:
+ *  - origin: user geolocation if available; else map center
+ *  - sorts by distance
+ *  - shows name, distance, tags
+ *  - clicking an item flies to marker and opens its popup
+ */
+function refreshList(){
+  if (!listEl) return;
+  // choose origin
+  const center = map.getCenter();
+  const origin = userOrigin || { lat: center.lat, lng: center.lng };
+
+  const rows = allSpots.map(s => {
+    const d = haversine(origin, { lat: s.lat, lng: s.lng });
+    return { ...s, _dist: d };
+  }).sort((a,b) => a._dist - b._dist).slice(0, 30); // top N nearby
+
+  // render
+  listEl.innerHTML = '';
+  for (const s of rows){
+    const li = document.createElement('li');
+    li.className = 'list-item';
+    li.setAttribute('role', 'listitem');
+
+    const tags = (s.tags || []).slice(0,4).map(t => `<span class="tag">${t}</span>`).join(' ');
+    li.innerHTML = `
+      <div class="item-title">${s.name}</div>
+      <div class="item-sub">
+        <span class="item-dist">${fmtDistance(s._dist)}</span>
+        ${tags ? `<span>${tags}</span>` : ''}
+      </div>
+    `;
+
+    li.addEventListener('click', () => {
+      // fly to marker, open popup
+      const m = markersById.get(s.id);
+      if (m) {
+        map.flyTo([s.lat, s.lng], Math.max(map.getZoom(), 18), { duration: 0.6 });
+        // ensure the marker is actually on the map (if clustered, this will spiderfy)
+        m.openPopup();
+      } else {
+        // fallback
+        map.flyTo([s.lat, s.lng], Math.max(map.getZoom(), 18), { duration: 0.6 });
+      }
+    });
+
+    listEl.appendChild(li);
+  }
+}
+
+// Try to get user location once; fall back to map center if denied
+if ('geolocation' in navigator){
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      userOrigin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      if (side.classList.contains('open')) refreshList();
+    },
+    () => { /* ignore errors; we'll use map center */ },
+    { enableHighAccuracy: true, timeout: 6000, maximumAge: 300000 }
+  );
+}
+
+// Rebuild the list when the map moves (only while sidebar is open)
+map.on('moveend', () => {
+  if (side.classList.contains('open')) refreshList();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hook into your existing fetch: capture spots and build markersById
+// (We lightly patch your earlier fetch handler here.)
+// ─────────────────────────────────────────────────────────────────────────────
+(function(){
+  // Intercept the original fetch logic to store spots and index markers
+  const originalFetch = fetch;
+  // Only affects this specific endpoint
+  fetch = function(resource, init){
+    const result = originalFetch(resource, init);
+    if (typeof resource === 'string' && resource.includes('/api/spots')) {
+      result.then(async r => {
+        // clone to read without disturbing the existing chain
+        const clone = r.clone();
+        try {
+          const arr = await clone.json();
+          allSpots = Array.isArray(arr) ? arr : [];
+          // after initial data load, if the sidebar is open, render once
+          if (side.classList.contains('open')) refreshList();
+        } catch {}
+      }).catch(() => {});
+    }
+    return result;
+  };
+})();
