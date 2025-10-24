@@ -97,6 +97,10 @@ fetch('http://localhost:3000/api/spots')
     return r.json();
   })
   .then(spots => {
+    // NEW: store for the sidebar
+    allSpots = Array.isArray(spots) ? spots : [];
+    if (side.classList.contains('open')) refreshList();
+
     console.log('Loaded spots:', spots.length, spots[0]);
     spots.forEach(spot => {
       const marker = L.marker([spot.lat, spot.lng], { icon: studyIcon })
@@ -264,17 +268,19 @@ updateSidebarOffset();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Nearby list (sidebar)
+// Shows the N closest spots to either the user's location (if granted) or
+// the current map center. Clicking an item flies to the marker and opens it.
 // ─────────────────────────────────────────────────────────────────────────────
 let allSpots = [];             // holds spots from /api/spots
 let userOrigin = null;         // {lat, lng} if geolocation allowed
 
-// quick helpers
-const listEl = document.getElementById('listResults');
+// Cache the <ul> element that holds list items
+const resultsList = document.getElementById('listResults');
 
-/** Haversine distance in meters */
-function haversine(a, b){
-  const R = 6371000;
-  const toRad = d => d * Math.PI / 180;
+/** gets distance in meters */
+function getDistance(a, b){
+  const R = 6371000; // earth radius in meters
+  const toRad = d => d * Math.PI / 180; // translates degree to radians
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
   const la1 = toRad(a.lat), la2 = toRad(b.lat);
@@ -282,6 +288,10 @@ function haversine(a, b){
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+/**
+ * fmtDistance(meters) -> "123 m" or "1.23 km"
+ * Human-readable distance formatting for the sidebar.
+ */
 function fmtDistance(m){
   if (m < 1000) return `${Math.round(m)} m`;
   return `${(m/1000).toFixed(2)} km`;
@@ -296,24 +306,27 @@ function fmtDistance(m){
  *  - clicking an item flies to marker and opens its popup
  */
 function refreshList(){
-  if (!listEl) return;
-  // choose origin
+  if (!resultsList) return;
+   // Pick the reference point: user location (if granted) else current map center
   const center = map.getCenter();
   const origin = userOrigin || { lat: center.lat, lng: center.lng };
 
+  // Enrich each spot with a computed distance, sort by that distance, take top 30
   const rows = allSpots.map(s => {
-    const d = haversine(origin, { lat: s.lat, lng: s.lng });
+    const d = getDistance(origin, { lat: s.lat, lng: s.lng });
     return { ...s, _dist: d };
   }).sort((a,b) => a._dist - b._dist).slice(0, 30); // top N nearby
 
-  // render
-  listEl.innerHTML = '';
+  // Clear the list and render items
+  resultsList.innerHTML = '';
   for (const s of rows){
     const li = document.createElement('li');
     li.className = 'list-item';
     li.setAttribute('role', 'listitem');
 
+    // Show up to 4 tags for compactness
     const tags = (s.tags || []).slice(0,4).map(t => `<span class="tag">${t}</span>`).join(' ');
+    
     li.innerHTML = `
       <div class="item-title">${s.name}</div>
       <div class="item-sub">
@@ -322,6 +335,7 @@ function refreshList(){
       </div>
     `;
 
+    // When clicked, fly to the spot and open its popup (if marker exists)
     li.addEventListener('click', () => {
       // fly to marker, open popup
       const m = markersById.get(s.id);
@@ -335,11 +349,12 @@ function refreshList(){
       }
     });
 
-    listEl.appendChild(li);
+    resultsList.appendChild(li);
   }
 }
 
-// Try to get user location once; fall back to map center if denied
+// Try to get the user's location once; if denied, silently fall back to map center.
+// If permission is granted and the sidebar is open, refresh to show correct distances.
 if ('geolocation' in navigator){
   navigator.geolocation.getCurrentPosition(
     (pos) => {
@@ -351,21 +366,26 @@ if ('geolocation' in navigator){
   );
 }
 
-// Rebuild the list when the map moves (only while sidebar is open)
+// Keep the list relevant as the user pans/zooms:
+// Only rebuild when the sidebar is open (saves work when it’s hidden).
 map.on('moveend', () => {
   if (side.classList.contains('open')) refreshList();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hook into your existing fetch: capture spots and build markersById
-// (We lightly patch your earlier fetch handler here.)
+// Fetch hook: capture /api/spots results so the sidebar has data to work with.
+// NOTE: This intercepts calls made AFTER this code runs. If the initial fetch
+// happens earlier in the file, prefer setting `allSpots` in that handler too.
 // ─────────────────────────────────────────────────────────────────────────────
 (function(){
   // Intercept the original fetch logic to store spots and index markers
   const originalFetch = fetch;
+  
   // Only affects this specific endpoint
   fetch = function(resource, init){
     const result = originalFetch(resource, init);
+
+    // Only intercept the spots endpoint (supports absolute or relative URLs)
     if (typeof resource === 'string' && resource.includes('/api/spots')) {
       result.then(async r => {
         // clone to read without disturbing the existing chain
@@ -373,10 +393,14 @@ map.on('moveend', () => {
         try {
           const arr = await clone.json();
           allSpots = Array.isArray(arr) ? arr : [];
-          // after initial data load, if the sidebar is open, render once
+          // If the sidebar is already open, refresh once to show the new data
           if (side.classList.contains('open')) refreshList();
-        } catch {}
-      }).catch(() => {});
+        } catch {
+          // Ignore JSON errors—other fetch consumers will handle their own failures
+        }
+      }).catch(() => {
+        // Swallow network errors here so we don't interfere with the original caller
+      });
     }
     return result;
   };
