@@ -55,5 +55,24 @@
       "sun": [{"open": "08:00", "close": "22:00"}]
     },
     "likes": 0
+  },
+  {
+    "id": "sayaka-tea",
+    "name": "SAYAKA TEA",
+    "building": "SAYAKA TEA",
+    "lat": 32.764723800144324,
+    "lng":  -117.0613266928202,
+    "tags": ["group", "outdoor", "outlets"],
+    "notes": "Shaded outdoor tables; a bit lively at lunch.",
+    "hours": {
+      "mon": [{"open": "07:00", "close": "22:00"}],
+      "tue": [{"open": "07:00", "close": "22:00"}],
+      "wed": [{"open": "07:00", "close": "22:00"}],
+      "thu": [{"open": "07:00", "close": "22:00"}],
+      "fri": [{"open": "07:00", "close": "22:00"}],
+      "sat": [{"open": "08:00", "close": "22:00"}],
+      "sun": [{"open": "08:00", "close": "22:00"}]
+    },
+    "likes": 0
   }
 ]
