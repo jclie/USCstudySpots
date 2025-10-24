@@ -16,7 +16,7 @@
       "sat": [{"open": "10:00", "close": "18:00"}],
       "sun": [{"open": "10:00", "close": "22:00"}]
     },
-    "likes": 4
+    "likes": 0
   },
   {
     "id": "doheny-library",
@@ -35,7 +35,7 @@
       "sat": [],
       "sun": []
     },
-    "likes": 3
+    "likes": 0
   },
   {
     "id": "tcc",
@@ -54,6 +54,6 @@
       "sat": [{"open": "08:00", "close": "22:00"}],
       "sun": [{"open": "08:00", "close": "22:00"}]
     },
-    "likes": 6
+    "likes": 0
   }
 ]

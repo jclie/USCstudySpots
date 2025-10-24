@@ -1,6 +1,9 @@
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Base map setup (Leaflet + OSM)
+// ─────────────────────────────────────────────────────────────────────────────
 // sets map to USC location and zoomed to campus level
 const map = L.map('map').setView([34.0219, -118.2858], 16); // USC
+
 
 // tiles, creates the map
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -8,31 +11,58 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
 }).addTo(map);
 
-// marker icons
+// ─────────────────────────────────────────────────────────────────────────────
+// Marker icon configuration
+// ─────────────────────────────────────────────────────────────────────────────
+// Configures a reusable Leaflet Icon for "study spots"
 const studyIcon = L.icon({
     iconUrl: "assets/study icon.png",
     iconSize: [30, 30], // rendered size (w,h)
-    iconAnchor: [15, 30],
-    popupAnchor: [0, -30]
+    iconAnchor: [15, 30], // the pixel within the icon that "sits" on the marker's lat/lng
+    popupAnchor: [0, -30] // where the popup originates relative to the iconAnchor
 });
 
 // Quick lookup by id -> Leaflet marker (useful for syncing with a sidebar list, filters, etc.)
 const markersById = new Map();
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Marker clustering
+// ─────────────────────────────────────────────────────────────────────────────
 // Group markers into clusters to keep the map tidy at lower zoom levels.
 const cluster = L.markerClusterGroup({
-  maxClusterRadius: 120,   // was 60 → easier to merge
-  showCoverageOnHover: false,
-  disableClusteringAtZoom: 18,
-  spiderfyOnClick: true,
-  iconCreateFunction: function (c) {
-    const count = c.getChildCount();
-    const tier = count >= 50 ? 'large' : (count >= 10 ? 'medium' : 'small');
+  maxClusterRadius: 120,  // larger radius makes clusters merge more aggressively.\
+  showCoverageOnHover: false, 
+  disableClusteringAtZoom: 18, // turn clusters off when users zoom in close
+  spiderfyOnClick: true, // spreads overlapping markers for easier selection.
+  // builds a custom cluster icon element based on how many markers are inside the cluster "c".
+  iconCreateFunction: function (c) { // c (L.MarkerCluster) – exposes getChildCount()
+    const count = c.getChildCount(); 
+    const tier = count >= 50 ? 'large' : (count >= 10 ? 'medium' : 'small'); 
     const html = '<div class="cluster cluster-' + tier + '"><span>' + count + '</span></div>';
-    return L.divIcon({ html, className: 'custom-cluster', iconSize: [44,44] });
+    return L.divIcon({ html, className: 'custom-cluster', iconSize: [44,44] }); // outputs a Leaflet divIcon with size & HTML for our tiered badge
   }
 }).addTo(map);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Popup HTML builder
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * buildPopup(spot)
+ * Purpose: Generate the markup shown when a marker is clicked.
+ * Input:   spot: {
+ *            name: string,
+ *            notes?: string,
+ *            tags?: string[],
+ *            hours?: {
+ *              sun|mon|...|sat?: {open:string, close:string}[]
+ *            }
+ *          }
+ * Output:  string (HTML) — safe to pass into Leaflet's bindPopup().
+ * Behavior:
+ *  - Renders tags as pill elements if present.
+ *  - Computes a "today" hours string from spot.hours using the browser's local
+ *    weekday (0=Sun..6=Sat). If no hours today => "Closed today".
+ */
 // Popup builder
 function buildPopup(spot) {
   const tags = (spot.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
@@ -53,7 +83,15 @@ function buildPopup(spot) {
   `;
 }
 
-// create spots and add markers
+// ─────────────────────────────────────────────────────────────────────────────
+// Data fetch + marker creation
+// ─────────────────────────────────────────────────────────────────────────────
+// Fetches study spots from your local API and adds markers to the cluster.
+// Flow:
+//  1) GET /api/spots → JSON array of { id?, name, lat, lng, tags?, notes?, hours? }.
+//  2) For each spot, create a marker, attach a popup, and insert into the cluster.
+//  3) Future code: track marker by spot.id in markersById for quick lookups later.
+// Errors: logs HTTP errors or network failures to the console.
 fetch('http://localhost:3000/api/spots')
   .then(r => {
     if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -62,9 +100,15 @@ fetch('http://localhost:3000/api/spots')
   .then(spots => {
     console.log('Loaded spots:', spots.length, spots[0]);
     spots.forEach(spot => {
-      L.marker([spot.lat, spot.lng], { icon: studyIcon })
-        .bindPopup(buildPopup(spot))
-        .addTo(cluster);
+      const marker = L.marker([spot.lat, spot.lng], { icon: studyIcon })
+        .bindPopup(buildPopup(spot));
+
+      // Keep a lookup if each spot has a unique id
+      if (spot.id != null) {
+        markersById.set(spot.id, marker);
+      }
+
+      marker.addTo(cluster);
     });
   })
   .catch(err => {
@@ -82,7 +126,16 @@ fetch('http://localhost:3000/api/spots')
     return;
   }
 
-  // Show the panel and wire up outside-click / Escape handlers.
+  // ───────────────────────────────────────────────────────────────────────────
+  // function openPanel()
+  // Purpose: Open the filters panel, update ARIA state, focus the first control,
+  //          and attach global listeners for outside-click and Escape key.
+  // Notes:
+  //  - Adds 'open' CSS class to reveal the panel.
+  //  - Sets aria-expanded="true" for screen readers.
+  //  - Focus management improves keyboard UX.
+  //  - Document-level listeners are cleaned up in closePanel().
+  // ───────────────────────────────────────────────────────────────────────────
   const openPanel = () => {
     panel.classList.add('open');
     btn.setAttribute('aria-expanded', 'true');
@@ -96,7 +149,11 @@ fetch('http://localhost:3000/api/spots')
     document.addEventListener('keydown', onKey);
   };
 
-  // Hide the panel and remove handlers to avoid leaks.
+  // ────────────────────────────────────────────────────────────────────────────────────────
+  // function closePanel()
+  // Purpose: Hide the filters panel, revert ARIA state, and remove document-level listeners 
+  // to prevent leaks and accidental triggers.
+  // ────────────────────────────────────────────────────────────────────────────────────────
   const closePanel = () => {
     panel.classList.remove('open');
     btn.setAttribute('aria-expanded', 'false');
@@ -104,7 +161,12 @@ fetch('http://localhost:3000/api/spots')
     document.removeEventListener('keydown', onKey);
   };
 
-  // If the click is outside both the panel and the button, close it.
+  // ───────────────────────────────────────────────────────────────────────────
+  // function onDocClick(e)
+  // Purpose: Detects clicks outside both the button and the panel to close
+  //          the panel (typical click-away behavior).
+  // Inputs:  e: MouseEvent
+  // ───────────────────────────────────────────────────────────────────────────
   const onDocClick = (e) => {
     if (panel.contains(e.target) || btn.contains(e.target)) return;
     closePanel();
@@ -125,7 +187,9 @@ fetch('http://localhost:3000/api/spots')
   });
 })();
 
-// sidebar controls
+// ─────────────────────────────────────────────────────────────────────────────
+// Sidebar controls
+// ─────────────────────────────────────────────────────────────────────────────
 // Cache references to the sidebar, its open/close buttons.
 const side = document.getElementById('sideList');
 const listToggle = document.getElementById('listToggle');
@@ -135,6 +199,19 @@ const closeList = document.getElementById('closeList');
 if (listToggle) listToggle.addEventListener('click', () => toggleList());
 if (closeList)  closeList.addEventListener('click', () => toggleList(false));
 
+/**
+ * toggleList(force?)
+ * Purpose: Open/close the sidebar and keep ARIA state in sync.
+ * Input:   force (boolean | undefined)
+ *          - true  → open
+ *          - false → close
+ *          - undefined → toggle based on current state
+ * Effects:
+ *  - Toggles 'open' class on the sidebar element.
+ *  - Updates aria-pressed on the toggle button for accessibility.
+ *  - Calls refreshList() when opening to rebuild/refresh the visible list (assumes
+ *    refreshList() exists elsewhere in your codebase).
+ */
 // toggle sidebar
 function toggleList(force) {
   const show = typeof force === 'boolean' ? force : !side.classList.contains('open');
@@ -143,6 +220,18 @@ function toggleList(force) {
   if (show) refreshList();
 }
 
+/**
+ * updateSidebarOffset()
+ * Purpose: Keep centered UI elements (e.g., search/add controls) visually
+ *          centered when the sidebar opens by shifting via a CSS variable.
+ * Behavior:
+ *  - Reads the current sidebar width when open.
+ *  - If sidebar nearly covers the viewport (mobile), sets offset to 0 to avoid
+ *    awkward horizontal shifting.
+ *  - Writes --sidebar-offset on :root for use in CSS layout rules.
+ * Notes:
+ *  - Called on window resize and whenever the sidebar is toggled.
+ */
 // keep search/add group visually centered when sidebar is open
 function updateSidebarOffset() {
   const root = document.documentElement;
@@ -156,9 +245,15 @@ function updateSidebarOffset() {
   root.style.setProperty('--sidebar-offset', w + 'px');
 }
 
-// call on toggle + on resize
+// Recompute the offset when the viewport changes size.
 window.addEventListener('resize', updateSidebarOffset);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Function wrapping to inject offset updates whenever toggleList runs.
+// We save the original implementation, then reassign toggleList to a wrapper
+// that calls the original and subsequently updates the CSS offset.
+// This avoids duplicating offset logic in multiple call sites.
+// ─────────────────────────────────────────────────────────────────────────────
 const _origToggleList = toggleList;
 toggleList = function(force){
   _origToggleList(force);
