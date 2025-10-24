@@ -294,3 +294,21 @@ body {
   font-size: .85rem;
   color: #555;
 }
+
+/* Like BUtton */
+.like-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 6px;
+}
+.like-btn:hover {
+  transform: scale(1.2);
+}
+.like-btn .count {
+  font-weight: 600;
+  margin-left: 2px;
+  font-size: 0.9rem;
+}

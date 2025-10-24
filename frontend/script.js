@@ -45,6 +45,50 @@ const cluster = L.markerClusterGroup({
 // ─────────────────────────────────────────────────────────────────────────────
 // Popup HTML builder
 // ─────────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────
+// ❤️ Local like helpers using localStorage
+// Purpose: Store and retrieve which study spots
+// the user has liked locally (persists across reloads)
+// ───────────────────────────────────────────────
+/**
+ * getLiked()
+ * Reads an array of liked spot IDs from localStorage.
+ * Returns [] if nothing saved or if parsing fails.
+ */
+function getLiked(){
+  try { return JSON.parse(localStorage.getItem('likedSpots') || '[]'); }
+  catch { return []; } // fallback: return empty array
+}
+/**
+ * saveLiked(arr)
+ * Saves the provided array of liked IDs back to localStorage.
+ */
+function saveLiked(arr){
+  localStorage.setItem('likedSpots', JSON.stringify(arr));
+}
+/**
+ * getLikeCounts()
+ * Reads an object of {spotId: count} from localStorage.
+ */
+function getLikeCounts(){
+  try { return JSON.parse(localStorage.getItem('likeCounts') || '{}'); }
+  catch { return {}; } // fallback: return empty object
+}
+/**
+ * getLikeCount(id)
+ * Returns the saved count for a given spot ID (defaults to 0).
+ */
+function getLikeCount(id){
+  const all = getLikeCounts();
+  return all[id] || 0;
+}
+/**
+ * saveLikeCounts(obj)
+ * Saves the like counts object back to localStorage.
+ */
+function saveLikeCounts(obj){
+  localStorage.setItem('likeCounts', JSON.stringify(obj));
+}
 /**
  * buildPopup(spot)
  * Purpose: Generate the markup shown when a marker is clicked.
@@ -72,12 +116,26 @@ function buildPopup(spot) {
     const ranges = spot.hours[today] || [];
     hoursText = ranges.length ? ranges.map(r => `${r.open}–${r.close}`).join(", ") : "Closed today";
   }
+
+  // Use a unique key per spot (prefer its database ID, fallback = name)
+  const key = spot.id || `spot:${spot.name}`;
+
+  // Read current "liked" state and count from localStorage
+  const liked = getLiked().includes(key);
+  const count = getLikeCount(key);
+
+  // Pick emoji based on like state
+  const heart = liked ? "❤️" : "🤍";
+
   return `
   <div class="gm-popup">
     <h3>${spot.name}</h3>
     ${tags ? `<div class="gm-tags">${tags}</div>` : ""}
-    <p>${spot.notes}</p>
+    <p>${spot.notes || ""}</p>
     ${spot.hours ? `<p class="gm-hours">🕒 ${hoursText}</p>` : ""}
+    <button class="like-btn" data-id="${key}">
+      ${heart} <span class="count">${count}</span>
+    </button>
   </div>
   `;
 }
@@ -257,9 +315,9 @@ window.addEventListener('resize', updateSidebarOffset);
 // that calls the original and subsequently updates the CSS offset.
 // This avoids duplicating offset logic in multiple call sites.
 // ─────────────────────────────────────────────────────────────────────────────
-const _origToggleList = toggleList;
+const origToggleList = toggleList;
 toggleList = function(force){
-  _origToggleList(force);
+  origToggleList(force);
   updateSidebarOffset();
 };
 
@@ -405,3 +463,40 @@ map.on('moveend', () => {
     return result;
   };
 })();
+
+// ───────────────────────────────────────────────
+// ❤️ Global click handler for like buttons
+// Purpose: Toggle heart emoji and count in popups
+// and update localStorage so it persists across reloads.
+// ───────────────────────────────────────────────
+document.addEventListener('click', (e) => {
+  // Check if a click was on or inside a .like-btn element
+  const btn = e.target.closest('.like-btn');
+  if (!btn) return; // Ignore clicks elsewhere
+
+  // Get the spot ID from button's data attribute
+  const id = btn.dataset.id;
+
+  // Load current liked IDs and counts from storage
+  let liked = getLiked();
+  let counts = getLikeCounts();
+  counts[id] = counts[id] || 0;
+
+  // Toggle like state
+  if (liked.includes(id)) {
+    // If already liked → unlike it
+    liked = liked.filter(x => x !== id);
+    counts[id] = Math.max(0, counts[id] - 1);
+  } else {
+    // If not liked yet → add like
+    liked.push(id);
+    counts[id]++;
+  }
+
+  // Save new state back to localStorage
+  saveLiked(liked);
+  saveLikeCounts(counts);
+
+  // Immediately update the popup UI (emoji + number)
+  btn.innerHTML = `${liked.includes(id) ? "❤️" : "🤍"} <span class="count">${counts[id]}</span>`;
+});
