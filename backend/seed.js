@@ -1,10 +1,17 @@
 // Import required modules
 import Database from 'better-sqlite3';  // Fast, synchronous SQLite library
 import fs from 'fs';                    // Node's file system module
+import path from 'path';                 
+import { fileURLToPath } from 'url';
+
+// Resolve __dirname in ESM
+// added to fix path issues with spots.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // --- Configuration constants ---
-const DB_PATH = process.env.DB_PATH || './data.db';        // Path to SQLite database file
-const SRC = process.env.SEED_FILE || '../data/spots.json'; // Path to JSON seed data file
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.db');
+const SRC = process.env.SEED_FILE || path.join(__dirname, 'models', 'spots.json');
 
 // --- Initialize database ---
 const db = new Database(DB_PATH); // Open or create the database file
