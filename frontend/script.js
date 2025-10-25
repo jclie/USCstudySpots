@@ -190,6 +190,158 @@ fetch('http://localhost:3000/api/spots')
   });
 })();
 
+// ───────── Config ─────────
+const API_BASE = window.API_BASE || 'http://localhost:3000';
+
+// ───────── State ─────────
+let addMode = false;
+let tempMarker = null;
+let pendingLatLng = null;
+
+// ───────── Elements ─────────
+const addBtn = document.getElementById('addSS');
+const modal = document.getElementById('addSpotModal');
+const form  = document.getElementById('addSpotForm');
+const nameInput = document.getElementById('gmName');
+const notesInput = document.getElementById('gmNotes');
+const latEl = document.getElementById('gmLat');
+const lngEl = document.getElementById('gmLng');
+
+// Basic modal controls
+function openModal() {
+  modal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => nameInput?.focus(), 0);
+}
+function closeModal() {
+  modal.setAttribute('aria-hidden', 'true');
+  form.reset();
+}
+
+// Close on backdrop / X / Cancel
+modal.addEventListener('click', (e) => {
+  if (e.target.matches('[data-closemodal]')) {
+    exitAddMode(true);
+  }
+});
+
+// Esc to close
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') {
+    exitAddMode(true);
+  }
+});
+
+// Button: enter/exit add mode
+if (addBtn) {
+  addBtn.addEventListener('click', () => {
+    if (addMode) { exitAddMode(true); return; }
+    enterAddMode();
+  });
+}
+
+function enterAddMode() {
+  addMode = true;
+  addBtn.textContent = 'Click map to place spot…';
+  addBtn.classList.add('is-armed');
+  map.getContainer().style.cursor = 'crosshair';
+}
+
+function exitAddMode(clearTemp = false) {
+  addMode = false;
+  addBtn.textContent = '+ Add Spot';
+  addBtn.classList.remove('is-armed');
+  map.getContainer().style.cursor = '';
+  if (clearTemp && tempMarker) {
+    map.removeLayer(tempMarker);
+    tempMarker = null;
+  }
+  pendingLatLng = null;
+  closeModal();
+}
+
+// Map click: place marker, set coords, open modal
+map.on('click', (e) => {
+  if (!addMode) return;
+  pendingLatLng = e.latlng;
+
+  // show / move temp marker
+  if (tempMarker) map.removeLayer(tempMarker);
+  tempMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon: studyIcon }).addTo(map);
+
+  // push coords into hidden inputs
+  latEl.value = String(e.latlng.lat);
+  lngEl.value = String(e.latlng.lng);
+
+  openModal();
+});
+
+// Submit form → POST /api/spots
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!pendingLatLng) {
+    alert('Click the map first to choose a location.');
+    return;
+  }
+
+  const submitBtn = form.querySelector('button[type="submit"]');
+  submitBtn.classList.add('loading');
+  submitBtn.disabled = true;
+
+  const tags = Array.from(form.querySelectorAll('input[name="tags"]:checked'))
+    .map(cb => cb.value);
+
+  const payload = {
+    name: nameInput.value.trim(),
+    notes: notesInput.value.trim(),
+    lat: Number(latEl.value),
+    lng: Number(lngEl.value),
+    tags
+  };
+
+  // very light client validation
+  if (!payload.name || payload.name.length < 2) {
+    alert('Please provide a name (min 2 chars).');
+    submitBtn.classList.remove('loading'); submitBtn.disabled = false;
+    return;
+  }
+
+  try {
+    const r = await fetch(`${API_BASE}/api/spots`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+
+    // Success UX
+    alert('Thanks! Your spot was submitted for review.');
+
+    // Optimistically add to map (optional)
+    const spot = {
+      id: data.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
+      name: payload.name,
+      lat: payload.lat,
+      lng: payload.lng,
+      notes: payload.notes,
+      tags: payload.tags
+    };
+    const m = L.marker([spot.lat, spot.lng], { icon: studyIcon }).bindPopup(buildPopup(spot));
+    cluster.addLayer(m);
+    markersById.set(spot.id, m);
+    if (typeof refreshList === 'function') refreshList();
+
+    exitAddMode(false); // keep the temp marker as real marker now
+    tempMarker = null; // it’s replaced by the real one in cluster
+  } catch (err) {
+    console.error(err);
+    alert('Submit failed. Please try again.');
+  } finally {
+    submitBtn.classList.remove('loading');
+    submitBtn.disabled = false;
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sidebar controls
 // ─────────────────────────────────────────────────────────────────────────────
@@ -405,3 +557,28 @@ map.on('moveend', () => {
     return result;
   };
 })();
+
+//─────────────────────────────────────────────────────────────────────────────
+// Form Attributes
+//─────────────────────────────────────────────────────────────────────────────
+const formElement = document.getElementById('addSpotModal');
+const addButton = document.getElementById('addSS');
+
+function openForm()  { 
+  formElement.setAttribute('aria-hidden', 'false'); 
+}
+function closeForm() { 
+  formElement.setAttribute('aria-hidden', 'true');  
+}
+
+addButton.addEventListener('click', openForm);
+
+// Close on backdrop / X / Cancel
+formElement.addEventListener('click', (e) => {
+  if (e.target.matches('[data-closeform]')) closeForm();
+});
+
+// Close on Esc
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && formElement.getAttribute('aria-hidden') === 'false') closeForm();
+});

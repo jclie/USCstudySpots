@@ -88,7 +88,79 @@
       </div>
       <button type="button" id="addSS" class="gm-addBtn" aria-label="Add a new study spot">
           + Add Spot
-        </button>
+      </button>
+
+      <!-- Add Spot Form -->
+       <div id="addSpotModal" class="gm-form" aria-hidden="true">
+        <div class="gm-formBackdrop" data-closeform></div>
+          <div class="gm-formDialog" role="dialog" aria-modal="true" aria-labelledby="gmAddTitle">
+            <button class="gm-formClose" type="button" title="Close" aria-label="Close" data-closeform>
+              x
+            </button>
+            <h2 id="gmAddTitle">
+              Add Study Spot
+            </h2>
+
+            <form id="addSpotForm" novalidate>
+              <div class="gm-field">
+                <label for="gm-field">
+                  Name
+                  <span aria-hidden="true">
+                    *
+                  </span>
+                  <input id="gmName" name="name" type="text" minlength="2" maxlength="80" required/>
+                </label>
+
+                <div class="gm-field">
+                  <label for="gmNotes">
+                    Notes
+                  </label>
+                  <textarea id="gmNotes" name="notes" rows="3" placeholder="Wi-Fi, outlets, quiet...">
+                  </textarea>
+                </div>
+
+                <fieldset class="gm-field">
+                  <legend>
+                    Tags
+                  </legend>
+                  <label>
+                    <input type="checkbox" name="tags" value="quiet">Quiet
+                  </label>
+                  <label>
+                    <input type="checkbox" name="tags" value="outlets">Outlets
+                  </label>
+                  <label>
+                    <input type="checkbox" name="tags" value="indoor">Indoor
+                  </label>
+                  <label>
+                    <input type="checkbox" name="tags" value="wifi">Wi-Fi
+                  </label>
+                </fieldset>
+
+                <!-- lattitude and longitude are filled automatically after clicking the map-->
+                 <input type="hidden" id="gmLat" name="lat"/>
+                 <input type="hidden" id="gmLng" name="lng"/>
+
+                 <div class="gm-actions">
+                  <button type="button" class="gm-btn" data-closeform>
+                    Cancel
+                  </button>
+                  <button type="submit" class="gm-btn gm-btn--primary">
+                    <span class="gm-btnLabel">
+                      Submit
+                    </span>
+                    <span class="gm-btnSpinner" aria-hidden="true">
+                    </span>
+                  </button> 
+                 </div>
+              </div>
+
+              <p class="gm-hint">
+                Tip: Click the map to place the spot first, then fill out the form
+              </p>
+            </form>
+          </div>
+       </div>
     </div>
   </div>
 </body>

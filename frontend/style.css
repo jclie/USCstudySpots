@@ -206,6 +206,10 @@ body {
     width: 100%;
   }
 }
+.gm-addBtn.is-armed {
+  outline: 2px dashed currentColor;
+  opacity: 0.9;
+}
 
 /* --- Sidebar list --- */
 .side-list{
@@ -294,3 +298,81 @@ body {
   font-size: .85rem;
   color: #555;
 }
+
+/* Form */
+.gm-field { 
+  margin: 12px 0; 
+  display: grid; 
+  gap: 6px; 
+}
+.gm-field input[type="text"], .gm-field textarea {
+  width: 100%; 
+  padding: 10px 12px; 
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  font: inherit;
+}
+.gm-field fieldset { 
+  border: 0; padding: 0; 
+}
+.gm-field label { 
+  margin-right: 10px; 
+}
+.gm-actions { 
+  margin-top: 16px; 
+  display: flex; 
+  justify-content: flex-end; 
+  gap: 10px; 
+  align-items: center; 
+}
+.gm-btn { 
+  padding: 10px 14px; 
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  background: #fff; 
+  cursor: pointer; 
+}
+.gm-btn--primary { 
+  background: #111; 
+  color: #fff; 
+  border-color: #111; 
+}
+.gm-btn[disabled] { 
+  opacity: .6; 
+  cursor: not-allowed; 
+}
+/* Spinner */
+.gm-btn__spinner {
+  width: 16px; 
+  height: 16px; 
+  border-radius: 50%; 
+  border: 2px solid transparent; 
+  border-top-color: currentColor;
+  display: none;
+  margin-left: 8px; 
+  vertical-align: middle; 
+  animation: gmspin .9s linear infinite;
+}
+.gm-btn.loading .gm-btn__spinner { 
+  display: inline-block; 
+}
+@keyframes gmspin { to 
+  { 
+    transform: rotate(360deg); 
+  } 
+}
+.gm-hint { 
+  color: #666; 
+  font-size: .9rem; 
+  margin-top: 10px; 
+}
+/* Hide by default via aria-hidden */
+.gm-form { position: fixed; inset: 0; display: none; }
+.gm-form[aria-hidden="false"] { display: block; }
+/* Basic look (optional) */
+.gm-formBackdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
+.gm-formDialog {
+  position: relative; margin: 8vh auto 0; max-width: 520px; background: #fff;
+  border-radius: 10px; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.gm-formClose { position: absolute; top: 8px; right: 8px; border: 0; background: transparent; font-size: 22px; cursor: pointer; }
