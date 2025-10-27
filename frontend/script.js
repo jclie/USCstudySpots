@@ -571,8 +571,6 @@ function closeForm() {
   formElement.setAttribute('aria-hidden', 'true');  
 }
 
-addButton.addEventListener('click', openForm);
-
 // Close on backdrop / X / Cancel
 formElement.addEventListener('click', (e) => {
   if (e.target.matches('[data-closeform]')) closeForm();

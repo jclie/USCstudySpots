@@ -55,9 +55,14 @@ body {
   min-width: 0; /* prevents it from forcing others down */
 }
 .gm-icon {
-  display: grid; place-items: center;
-  width: 32px; height: 32px;
-  border: 0; background: transparent; color: #5f6368; cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent; 
+  color: #5f6368; 
+  cursor: pointer;
   border-radius: 999px;
 }
 .gm-icon:hover { 
@@ -89,7 +94,7 @@ body {
 }
 /* show panel */
 .filter-panel.open { 
-    display: block;
+  display: block;
 }
 
 /* make chips wrap nicely inside panel */
@@ -104,7 +109,7 @@ body {
 }
 /* keep the filters button feeling clickable */
 #filtersBtn { 
-    position: relative; 
+  position: relative; 
 }
 
 /* small caret triangle (optional) */
@@ -132,24 +137,24 @@ body {
   -webkit-appearance: none; appearance: none;
 }
 .chip { 
-    display:inline-flex;
-    align-items:center;
-    gap:.35rem; 
-    border:1px solid #ddd; 
-    padding:.25rem .5rem; 
-    border-radius:18px; 
-    cursor:pointer; 
-    user-select:none; 
+  display:inline-flex;
+  align-items:center;
+  gap:.35rem; 
+  border:1px solid #ddd; 
+  padding:.25rem .5rem; 
+  border-radius:18px; 
+  cursor:pointer; 
+  user-select:none; 
 }
 .chip input { 
-    accent-color: #cc0000;
+  accent-color: #cc0000;
 }
 .search { 
-    flex: 1; min-width: 220px; 
+  flex: 1; min-width: 220px; 
 }
 .popup h3 { 
-    margin:.2rem 0 .3rem; 
-    font-size: 1rem; 
+  margin:.2rem 0 .3rem; 
+  font-size: 1rem; 
 }
 
 /* Cluster */
@@ -164,8 +169,8 @@ body {
   --halo: rgba(153,0,0,.45); /* glow color */
 
   filter:
-    drop-shadow(0 4px 12px rgba(0,0,0,.25))   /* soft shadow */
-    drop-shadow(0 0 18px var(--halo));        /* colored glow */
+  drop-shadow(0 4px 12px rgba(0,0,0,.25))   /* soft shadow */
+  drop-shadow(0 0 18px var(--halo));        /* colored glow */
 }           
 .cluster:hover { 
   transform: scale(1.06); 
@@ -179,8 +184,8 @@ body {
   background: #fff;
   border: 1px solid rgba(0,0,0,.08);
   box-shadow:
-    0 1px 2px rgba(0,0,0,.10),
-    0 2px 8px rgba(0,0,0,.12);
+  0 1px 2px rgba(0,0,0,.10),
+  0 2px 8px rgba(0,0,0,.12);
   border-radius: 999px;    /* pill shape */
   font-weight: 600;
   cursor: pointer;
@@ -213,18 +218,29 @@ body {
 
 /* --- Sidebar list --- */
 .side-list{
-  position: absolute; top: 0; right: 0; bottom: 0;
-  width: min(360px, 85vw); background: #fff; z-index: 999;
+  position: absolute; 
+  top: 0; 
+  right: 0; 
+  bottom: 0;
+  width: min(360px, 85vw); 
+  background: #fff; 
+  z-index: 999;
   border-left: 1px solid rgba(0,0,0,.08);
   box-shadow: -4px 0 16px rgba(0,0,0,.12);
-  display: none; flex-direction: column;
+  display: none;
+  flex-direction: column;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .side-list.open { 
   display: flex; 
 }
 .side-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: .7rem .9rem; border-bottom: 1px solid rgba(0,0,0,.08);
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  padding: .7rem .9rem; 
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  font-family:Verdana, Geneva, Tahoma, sans-serif;
 }
 .iconbtn { 
   border: 0;
@@ -283,6 +299,7 @@ body {
   max-width: 220px;
 }
 .gm-popup h3 {
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
   font-size: 1rem;
   margin-bottom: 4px;
 }
@@ -300,37 +317,52 @@ body {
 }
 
 /* Form */
-.gm-field { 
-  margin: 12px 0; 
+.gm-formDialog h2 {
+  font-family:Verdana, Geneva, Tahoma, sans-serif;
+}
+.gm-field {  
   display: grid; 
-  gap: 6px; 
+  gap: 10px;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .gm-field input[type="text"], .gm-field textarea {
-  width: 100%; 
+  margin-top: 5px;
+  width: 95%; 
   padding: 10px 12px; 
   border: 1px solid #ddd; 
   border-radius: 8px; 
-  font: inherit;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.gm-field input[type="notes"], .gm-field textarea {
+  margin-top: -5px;
+  width: 92%; 
+  padding: 10px 12px; 
+  border: 1px solid #ddd; 
+  border-radius: 8px; 
+  font-family: Arial, Helvetica, sans-serif;
 }
 .gm-field fieldset { 
-  border: 0; padding: 0; 
+  border: 0; 
+  padding: 0; 
 }
 .gm-field label { 
-  margin-right: 10px; 
+  margin-right: 15px;
 }
+/* buttons */
 .gm-actions { 
-  margin-top: 16px; 
+  margin-top: 10px; 
   display: flex; 
   justify-content: flex-end; 
   gap: 10px; 
   align-items: center; 
+  font-family: Arial, Helvetica, sans-serif;
 }
 .gm-btn { 
   padding: 10px 14px; 
   border: 1px solid #ddd; 
   border-radius: 8px; 
   background: #fff; 
-  cursor: pointer; 
+  cursor: pointer;
 }
 .gm-btn--primary { 
   background: #111; 
@@ -340,6 +372,10 @@ body {
 .gm-btn[disabled] { 
   opacity: .6; 
   cursor: not-allowed; 
+}
+.gm-field legend {
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 /* Spinner */
 .gm-btn__spinner {
@@ -367,12 +403,35 @@ body {
   margin-top: 10px; 
 }
 /* Hide by default via aria-hidden */
-.gm-form { position: fixed; inset: 0; display: none; }
-.gm-form[aria-hidden="false"] { display: block; }
-/* Basic look (optional) */
-.gm-formBackdrop { position: absolute; inset: 0; background: rgba(0,0,0,.35); }
-.gm-formDialog {
-  position: relative; margin: 8vh auto 0; max-width: 520px; background: #fff;
-  border-radius: 10px; padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+.gm-form { 
+  position: fixed;
+  inset: 0;
+  display: none; 
 }
-.gm-formClose { position: absolute; top: 8px; right: 8px; border: 0; background: transparent; font-size: 22px; cursor: pointer; }
+.gm-form[aria-hidden="false"] { 
+  display: block;
+}
+/* Basic look (optional) */
+.gm-formBackdrop {
+  position: absolute; 
+  inset: 0; 
+  background: rgba(0,0,0,.35); 
+}
+.gm-formDialog {
+  position: relative; 
+  margin: 8vh auto 0; 
+  max-width: 520px; 
+  background: #fff;
+  border-radius: 10px; 
+  padding: 18px; 
+  box-shadow: 0 12px 40px rgba(0,0,0,.25);
+}
+.gm-formClose { 
+  position: absolute; 
+  top: 8px; 
+  right: 8px; 
+  border: 0; 
+  background: transparent; 
+  font-size: 22px; 
+  cursor: pointer; 
+}
