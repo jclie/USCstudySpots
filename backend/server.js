@@ -6,6 +6,12 @@ import Database from 'better-sqlite3';    // Synchronous, fast SQLite driver
 import { nanoid } from 'nanoid';          // Generates short, unique IDs
 import rateLimit from 'express-rate-limit'; // Simple request rate limiting
 import { z } from 'zod';                  // Runtime schema validation
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+// Re-create __filename and __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // App configuration
 const PORT = process.env.PORT || 3000;            // Port to listen on
@@ -18,9 +24,51 @@ db.pragma('foreign_keys = ON');  // Enforce foreign key constraints
 
 // Create and configure the Express appß
 const app = express();
-app.use(helmet());                     // Add various security headers
+// Security headers with permissions for the external map libraries we use
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+
+        // Allow Leaflet, MarkerCluster, and Fuse.js
+        scriptSrc: [
+          "'self'",
+          "https://unpkg.com",
+          "https://cdn.jsdelivr.net"
+        ],
+
+        // Allow our CSS and Leaflet/MarkerCluster CSS
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://unpkg.com"
+        ],
+
+        // Allow local images and OpenStreetMap map tiles
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://unpkg.com",
+          "https://tile.openstreetmap.org"
+        ],
+
+        // Frontend only needs to contact our own backend
+        connectSrc: ["'self'"]
+      }
+    },
+
+    referrerPolicy: {
+      policy: 'strict-origin-when-cross-origin'
+    }
+  })
+);
 app.use(cors({ origin: true }));       // Allow CORS (reflects Origin)
 app.use(express.json());               // Parse JSON request bodies
+
+// Serve the frontend files from the Express server
+const frontendPath = path.join(__dirname, '..', 'frontend');
+app.use(express.static(frontendPath));
 
 // Rate limiters to protect write-heavy endpoints
 const writeLimiter = rateLimit({ windowMs: 60_000, max: 20 }); // 20 writes/minute
@@ -134,57 +182,140 @@ app.post('/api/spots/:id/like', likeLimiter, (req, res) => {
 
   const total = tx();
   res.json({ ok: true, liked: true, likes: total });
-});
+});``
 
-// Submit a new spot (creates a 'pending' submission and spot)
+// Submit a new study spot for admin review
 app.post('/api/spots', writeLimiter, (req, res) => {
-  // Validate request body against schema
+  // Validate the request body using the Zod schema
   const parsed = SpotSubmission.safeParse(req.body);
+
+  // Stop if the submitted data is invalid
   if (!parsed.success) {
-    return res.status(400).json({ error: 'Invalid payload', issues: parsed.error.issues });
-    // Returns Zod validation issues for client-side debugging
+    return res.status(400).json({
+      error: 'Invalid payload',
+      issues: parsed.error.issues
+    });
   }
+
+  const payload = parsed.data;
 
   // Create a submission record for moderation
   const subId = nanoid(12);
-  const payload = parsed.data;
-  db.prepare(`INSERT INTO submissions (id, payload, status) VALUES (?, ?, 'pending')`)
-    .run(subId, JSON.stringify(payload));
 
-  // Also create a corresponding spot in 'pending' status
+  db.prepare(
+    `INSERT INTO submissions (id, payload, status)
+     VALUES (?, ?, 'pending')`
+  ).run(subId, JSON.stringify(payload));
+
+  // Create the study spot with a pending status
   const spotId = nanoid(10);
-  db.prepare(`INSERT INTO spots (id, name, lat, lng, notes, tags, hours, status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`)
-    .run(
-      spotId,
-      payload.name,
-      payload.lat,
-      payload.lng,
-      payload.notes || null,
-      JSON.stringify(payload.tags || []),
-      payload.hours ? JSON.stringify(payload.hours) : null
-    );
 
-  // Return Accepted with IDs for tracking
-  res.status(202).json({ ok: true, id: spotId, submission_id: subId, status: 'pending' });
+  db.prepare(
+    `INSERT INTO spots
+      (id, name, lat, lng, notes, tags, hours, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`
+  ).run(
+    spotId,
+    payload.name,
+    payload.lat,
+    payload.lng,
+    payload.notes || null,
+    JSON.stringify(payload.tags || []),
+    payload.hours ? JSON.stringify(payload.hours) : null
+  );
+
+  // Tell the frontend that the submission was received
+  res.status(202).json({
+    ok: true,
+    id: spotId,
+    submission_id: subId,
+    status: 'pending'
+  });
+});
+
+// Middleware that protects admin-only routes
+function requireAdmin(req, res, next) {
+  const adminToken = process.env.ADMIN_TOKEN;
+  const providedToken = req.headers['x-admin-token'];
+
+  if (!adminToken) {
+    return res.status(503).json({
+      error: 'Admin access is not configured'
+    });
+  }
+
+  if (!providedToken || providedToken !== adminToken) {
+    return res.status(401).json({
+      error: 'Unauthorized'
+    });
+  }
+
+  next();
+}
+
+// Admin: get all pending study spots
+app.get('/api/admin/spots', requireAdmin, (req, res) => {
+  const rows = db
+    .prepare(`
+      SELECT *
+      FROM spots
+      WHERE status = 'pending'
+      ORDER BY created_at DESC
+    `)
+    .all();
+
+  const pendingSpots = rows.map(row => ({
+    ...rowToSpot(row),
+    status: row.status,
+    created_at: row.created_at
+  }));
+
+  res.json(pendingSpots);
 });
 
 // Admin: approve a pending spot (requires x-admin-token header)
-app.post('/api/admin/spots/:id/approve', writeLimiter, (req, res) => {
-  if ((process.env.ADMIN_TOKEN || '') !== (req.headers['x-admin-token'] || '')) {
-    return res.status(401).json({ error: 'Unauthorized' }); // Guarded by static token
+app.post(
+  '/api/admin/spots/:id/approve', writeLimiter, requireAdmin, (req, res) => {
+    const info = db
+      .prepare(`UPDATE spots SET status='approved' WHERE id=?`)
+      .run(req.params.id);
+
+    res.json({
+      ok: true,
+      updated: info.changes
+    });
   }
-  const info = db.prepare(`UPDATE spots SET status='approved' WHERE id=?`).run(req.params.id);
-  res.json({ ok: true, updated: info.changes }); // 'changes' is number of rows updated
-});
+);
 
 // Admin: reject a spot (requires x-admin-token header)
-app.post('/api/admin/spots/:id/reject', writeLimiter, (req, res) => {
-  if ((process.env.ADMIN_TOKEN || '') !== (req.headers['x-admin-token'] || '')) {
-    return res.status(401).json({ error: 'Unauthorized' });
+app.post('/api/admin/spots/:id/reject', writeLimiter, requireAdmin, (req, res) => {
+    const info = db
+      .prepare(`UPDATE spots SET status='rejected' WHERE id=?`)
+      .run(req.params.id);
+
+    res.json({
+      ok: true,
+      updated: info.changes
+    });
   }
-  const info = db.prepare(`UPDATE spots SET status='rejected' WHERE id=?`).run(req.params.id);
-  res.json({ ok: true, updated: info.changes });
+);
+
+// Admin: hard-delete a spot (irreversible)
+app.delete('/api/admin/spots/:id', writeLimiter, requireAdmin, (req, res) => {
+    const info = db
+      .prepare(`DELETE FROM spots WHERE id=?`)
+      .run(req.params.id);
+
+    res.json({
+      ok: true,
+      deleted: info.changes
+    });
+  }
+);
+
+// Send the frontend homepage for the root URL
+app.get('/', (_req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 // Start the HTTP server

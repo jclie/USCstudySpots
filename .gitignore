@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# SQLite runtime database
+backend/data.db
+backend/data.db-shm
+backend/data.db-wal
+backend/data.db-journal
+
+# macOS files
+.DS_Store
+
+# VS Code local settings
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*

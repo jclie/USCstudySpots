@@ -1,0 +1,111 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  color: #222;
+}
+
+.admin-container {
+  width: min(900px, 92%);
+  margin: 40px auto;
+}
+
+header {
+  margin-bottom: 30px;
+}
+
+header h1 {
+  margin-bottom: 5px;
+  color: #990000;
+}
+
+header p {
+  margin-top: 0;
+  color: #666;
+}
+
+.login-card,
+.spot-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.token-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.token-row input {
+  flex: 1;
+  padding: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#loadBtn {
+  background: #990000;
+  color: white;
+}
+
+.approve-btn {
+  background: #2e7d32;
+  color: white;
+}
+
+.reject-btn {
+  background: #c62828;
+  color: white;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.spot-card h3 {
+  margin-top: 0;
+}
+
+.tags {
+  margin: 10px 0;
+}
+
+.tag {
+  display: inline-block;
+  background: #eeeeee;
+  padding: 4px 8px;
+  margin-right: 5px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.coordinates {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+#statusMessage {
+  min-height: 20px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-top: 20px;
+  color: #990000;
+  text-decoration: none;
+}

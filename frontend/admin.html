@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>USC Study Spots — Admin Review</title>
+
+  <link rel="stylesheet" href="admin.css">
+</head>
+
+<body>
+  <main class="admin-container">
+    <header>
+      <h1>USC Study Spots</h1>
+      <p>Admin Review Dashboard</p>
+    </header>
+
+    <section class="login-card">
+      <label for="adminToken">Admin Token</label>
+
+      <div class="token-row">
+        <input
+          id="adminToken"
+          type="password"
+          placeholder="Enter admin token"
+        >
+
+        <button id="loadBtn">
+          Load Pending Spots
+        </button>
+      </div>
+
+      <p id="statusMessage"></p>
+    </section>
+
+    <section>
+      <h2>Pending Study Spots</h2>
+
+      <div id="pendingSpots">
+        <p>Enter your admin token to load submissions.</p>
+      </div>
+    </section>
+
+    <a class="back-link" href="/">
+      ← Back to map
+    </a>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>

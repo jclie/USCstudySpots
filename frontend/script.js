@@ -5,9 +5,10 @@
 const map = L.map('map').setView([34.0219, -118.2858], 16); // USC
 
 // tiles, creates the map
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap'
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19,
+  attribution: '&copy; OpenStreetMap contributors',
+  referrerPolicy: 'strict-origin-when-cross-origin'
 }).addTo(map);
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,36 +63,123 @@ const cluster = L.markerClusterGroup({
  *  - Computes a "today" hours string from spot.hours using the browser's local
  *    weekday (0=Sun..6=Sat). If no hours today => "Closed today".
  */
+// Escapes user-provided text before inserting it into HTML
+function escapeHTML(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 // Popup builder
 function buildPopup(spot) {
-  const tags = (spot.tags || []).map(t => `<span class="tag">${t}</span>`).join("");
-  let hoursText = "";
+  const safeName = escapeHTML(spot.name);
+  const safeNotes = escapeHTML(spot.notes);
+
+  const tags = (spot.tags || [])
+    .map(tag => `<span>${escapeHTML(tag)}</span>`)
+    .join('');
+
+  // Figure out today's opening hours
+  let hoursText = '';
+
   if (spot.hours) {
-    const days = ["sun","mon","tue","wed","thu","fri","sat"];
+    const days = [
+      'sun',
+      'mon',
+      'tue',
+      'wed',
+      'thu',
+      'fri',
+      'sat'
+    ];
+
     const today = days[new Date().getDay()];
     const ranges = spot.hours[today] || [];
-    hoursText = ranges.length ? ranges.map(r => `${r.open}–${r.close}`).join(", ") : "Closed today";
+
+    hoursText = ranges.length
+      ? ranges
+          .map(range =>
+            `${escapeHTML(range.open)}–${escapeHTML(range.close)}`
+          )
+          .join(', ')
+      : 'Closed today';
   }
+
   return `
-  <div class="gm-popup">
-    <h3>${spot.name}</h3>
-    ${tags ? `<div class="gm-tags">${tags}</div>` : ""}
-    <p>${spot.notes}</p>
-    ${spot.hours ? `<p class="gm-hours">🕒 ${hoursText}</p>` : ""}
-  </div>
+    <div class="gm-popup">
+      <h3>${safeName}</h3>
+
+      ${tags ? `<div class="gm-tags">${tags}</div>` : ''}
+
+      <p>${safeNotes}</p>
+
+      ${spot.hours
+        ? `<p class="gm-hours">🕒 ${hoursText}</p>`
+        : ''
+      }
+
+      <button
+        class="like-btn"
+        data-id="${escapeHTML(spot.id)}"
+      >
+        👍 Like (${Number(spot.likes) || 0})
+      </button>
+    </div>
   `;
+}
+
+// Sends a like request to the backend and updates the button
+async function likeSpot(spotId, button) {
+  try {
+    const response = await fetch(`/api/spots/${spotId}/like`, {
+      method: 'POST'
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to like spot');
+    }
+
+    const data = await response.json();
+
+    // Update the button text with the new like count
+    button.textContent = `👍 Like (${data.likes})`;
+
+    // Update the matching spot in local state
+    const spot = allSpots.find(s => s.id === spotId);
+
+    if (spot) {
+      spot.likes = data.likes;
+    }
+  } catch (error) {
+    console.error('Like error:', error);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Data fetch + marker creation
 // ─────────────────────────────────────────────────────────────────────────────
+// Config
+const API_BASE = '';
+
+// State
+let allSpots = [];             // holds spots from /api/spots
+let visibleSpots = [];         // spots currently shown after search/filtering
+let userOrigin = null;         // {lat, lng} if geolocation allowed
+
+// Search and filter controls
+const searchInput = document.getElementById('search');
+const filterInputs = Array.from(document.querySelectorAll('.flt'));
+
 // Fetches study spots from your local API and adds markers to the cluster.
 // Flow:
 //  1) GET /api/spots → JSON array of { id?, name, lat, lng, tags?, notes?, hours? }.
 //  2) For each spot, create a marker, attach a popup, and insert into the cluster.
 //  3) Future code: track marker by spot.id in markersById for quick lookups later.
 // Errors: logs HTTP errors or network failures to the console.
-fetch('http://localhost:3000/api/spots')
+fetch(`${API_BASE}/api/spots`)
   .then(r => {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
@@ -99,6 +187,8 @@ fetch('http://localhost:3000/api/spots')
   .then(spots => {
     // NEW: store for the sidebar
     allSpots = Array.isArray(spots) ? spots : [];
+    visibleSpots = [...allSpots];
+
     if (side.classList.contains('open')) refreshList();
 
     console.log('Loaded spots:', spots.length, spots[0]);
@@ -117,6 +207,70 @@ fetch('http://localhost:3000/api/spots')
   .catch(err => {
     console.error('API /api/spots failed:', err);
   });
+
+// Apply the current search text and selected tag filters
+function applySearchAndFilters() {
+  // Start with every study spot
+  let results = [...allSpots];
+
+  // Get all checked filter tags
+  const selectedTags = filterInputs
+    .filter(input => input.checked)
+    .map(input => input.value.toLowerCase());
+
+  // Keep spots that contain every selected tag
+  if (selectedTags.length > 0) {
+    results = results.filter(spot => {
+      const spotTags = (spot.tags || []).map(tag => tag.toLowerCase());
+
+      return selectedTags.every(tag => spotTags.includes(tag));
+    });
+  }
+
+  // Get the current search text
+  const query = searchInput?.value.trim();
+
+  // Use Fuse.js for fuzzy searching
+  if (query) {
+    const fuse = new Fuse(results, {
+      keys: ['name', 'notes', 'tags'],
+      threshold: 0.35,
+      ignoreLocation: true
+    });
+
+    results = fuse.search(query).map(result => result.item);
+  }
+
+  // Save the currently visible spots
+  visibleSpots = results;
+
+  // Remove all markers from the cluster
+  cluster.clearLayers();
+
+  // Add only matching markers back to the map
+  visibleSpots.forEach(spot => {
+    const marker = markersById.get(spot.id);
+
+    if (marker) {
+      cluster.addLayer(marker);
+    }
+  });
+
+  // Update the sidebar too
+  if (side.classList.contains('open')) {
+    refreshList();
+  }
+}
+
+// Search while the user types
+if (searchInput) {
+  searchInput.addEventListener('input', applySearchAndFilters);
+}
+
+// Re-filter whenever a checkbox changes
+filterInputs.forEach(input => {
+  input.addEventListener('change', applySearchAndFilters);
+});
 
 // Filters dropdown behavior 
 (function () {
@@ -189,9 +343,6 @@ fetch('http://localhost:3000/api/spots')
     panel.classList.contains('open') ? closePanel() : openPanel();
   });
 })();
-
-// ───────── Config ─────────
-const API_BASE = window.API_BASE || 'http://localhost:3000';
 
 // ───────── State ─────────
 let addMode = false;
@@ -278,18 +429,24 @@ map.on('click', (e) => {
 // Submit form → POST /api/spots
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  // User must choose a location first
   if (!pendingLatLng) {
     alert('Click the map first to choose a location.');
     return;
   }
 
   const submitBtn = form.querySelector('button[type="submit"]');
+
   submitBtn.classList.add('loading');
   submitBtn.disabled = true;
 
-  const tags = Array.from(form.querySelectorAll('input[name="tags"]:checked'))
-    .map(cb => cb.value);
+  // Collect selected tags
+  const tags = Array.from(
+    form.querySelectorAll('input[name="tags"]:checked')
+  ).map(cb => cb.value);
 
+  // Build the request body
   const payload = {
     name: nameInput.value.trim(),
     notes: notesInput.value.trim(),
@@ -298,43 +455,49 @@ form.addEventListener('submit', async (e) => {
     tags
   };
 
-  // very light client validation
+  // Basic client-side validation
   if (!payload.name || payload.name.length < 2) {
     alert('Please provide a name (min 2 chars).');
-    submitBtn.classList.remove('loading'); submitBtn.disabled = false;
+
+    submitBtn.classList.remove('loading');
+    submitBtn.disabled = false;
+
     return;
   }
 
   try {
-    const r = await fetch(`${API_BASE}/api/spots`, {
+    // Send the new study spot to the backend
+    const response = await fetch(`${API_BASE}/api/spots`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload)
     });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
 
-    // Success UX
-    alert('Thanks! Your spot was submitted for review.');
+    const data = await response.json().catch(() => ({}));
 
-    // Optimistically add to map (optional)
-    const spot = {
-      id: data.id || (Date.now() + '-' + Math.random().toString(36).slice(2, 7)),
-      name: payload.name,
-      lat: payload.lat,
-      lng: payload.lng,
-      notes: payload.notes,
-      tags: payload.tags
-    };
-    const m = L.marker([spot.lat, spot.lng], { icon: studyIcon }).bindPopup(buildPopup(spot));
-    cluster.addLayer(m);
-    markersById.set(spot.id, m);
-    if (typeof refreshList === 'function') refreshList();
+    // Stop if the server rejected the request
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
 
-    exitAddMode(false); // keep the temp marker as real marker now
-    tempMarker = null; // it’s replaced by the real one in cluster
+    // New spots are pending until an admin approves them
+    alert('Thanks! Your study spot was submitted for review.');
+
+    // Clear the form
+    form.reset();
+
+    // Exit add mode and remove the temporary marker
+    exitAddMode(true);
+
+    // Reset temporary location state
+    tempMarker = null;
+    pendingLatLng = null;
+
   } catch (err) {
-    console.error(err);
+    console.error('Submit error:', err);
+
     alert('Submit failed. Please try again.');
   } finally {
     submitBtn.classList.remove('loading');
@@ -423,8 +586,6 @@ updateSidebarOffset();
 // Shows the N closest spots to either the user's location (if granted) or
 // the current map center. Clicking an item flies to the marker and opens it.
 // ─────────────────────────────────────────────────────────────────────────────
-let allSpots = [];             // holds spots from /api/spots
-let userOrigin = null;         // {lat, lng} if geolocation allowed
 
 // Cache the <ul> element that holds list items
 const resultsList = document.getElementById('listResults');
@@ -464,7 +625,7 @@ function refreshList(){
   const origin = userOrigin || { lat: center.lat, lng: center.lng };
 
   // Enrich each spot with a computed distance, sort by that distance, take top 30
-  const rows = allSpots.map(s => {
+  const rows = visibleSpots.map(s => {
     const d = getDistance(origin, { lat: s.lat, lng: s.lng });
     return { ...s, _dist: d };
   }).sort((a,b) => a._dist - b._dist).slice(0, 30); // top N nearby
@@ -524,40 +685,6 @@ map.on('moveend', () => {
   if (side.classList.contains('open')) refreshList();
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Fetch hook: capture /api/spots results so the sidebar has data to work with.
-// NOTE: This intercepts calls made AFTER this code runs. If the initial fetch
-// happens earlier in the file, prefer setting `allSpots` in that handler too.
-// ─────────────────────────────────────────────────────────────────────────────
-(function(){
-  // Intercept the original fetch logic to store spots and index markers
-  const originalFetch = fetch;
-  
-  // Only affects this specific endpoint
-  fetch = function(resource, init){
-    const result = originalFetch(resource, init);
-
-    // Only intercept the spots endpoint (supports absolute or relative URLs)
-    if (typeof resource === 'string' && resource.includes('/api/spots')) {
-      result.then(async r => {
-        // clone to read without disturbing the existing chain
-        const clone = r.clone();
-        try {
-          const arr = await clone.json();
-          allSpots = Array.isArray(arr) ? arr : [];
-          // If the sidebar is already open, refresh once to show the new data
-          if (side.classList.contains('open')) refreshList();
-        } catch {
-          // Ignore JSON errors—other fetch consumers will handle their own failures
-        }
-      }).catch(() => {
-        // Swallow network errors here so we don't interfere with the original caller
-      });
-    }
-    return result;
-  };
-})();
-
 //─────────────────────────────────────────────────────────────────────────────
 // Form Attributes
 //─────────────────────────────────────────────────────────────────────────────
@@ -567,6 +694,7 @@ const addButton = document.getElementById('addSS');
 function openForm()  { 
   formElement.setAttribute('aria-hidden', 'false'); 
 }
+
 function closeForm() { 
   formElement.setAttribute('aria-hidden', 'true');  
 }
@@ -579,4 +707,15 @@ formElement.addEventListener('click', (e) => {
 // Close on Esc
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && formElement.getAttribute('aria-hidden') === 'false') closeForm();
+});
+
+// Handles clicks on Like buttons inside map popups
+document.addEventListener('click', event => {
+  const button = event.target.closest('.like-btn');
+
+  if (!button) return;
+
+  const spotId = button.dataset.id;
+
+  likeSpot(spotId, button);
 });
